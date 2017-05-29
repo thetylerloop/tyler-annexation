@@ -1,0 +1,11 @@
+node_modules/*
+build
+!node_modules/stylus-normalize
+.DS_Store
+.tmp
+.Rproj.user
+.Rdata
+.Rhistory
+data
+animation
+results
