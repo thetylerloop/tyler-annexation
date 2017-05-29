@@ -4,11 +4,17 @@ library(ggplot2)
 library(ggthemes)
 
 annexations <- readOGR("data/with_area/with_area.shp")
+annexations@data$id <- rownames(annexations@data)
+
+df <- fortify(annexations, region = "id")
+df <- merge(df, annexations@data, by = "id")
 
 areas <- data.frame(year = numeric(), area_sq_m = numeric())
 
+df$addition = df$YEAR >= 2010
+
 ggplot() +
-  geom_polygon(data = annexations, aes(x = long, y = lat, group = group)) +
+  geom_polygon(data = df, aes(x = long, y = lat, group = group, fill = addition)) +
   coord_fixed(xlim = c(272000, 295000), ylim = c(3567000, 3595000)) +
   annotate("text", x = 275000, y = 3568000, label = "2017") + 
   theme_map() +
@@ -16,12 +22,14 @@ ggplot() +
 
 for (i in seq(1940, 2017, 10)) {
   print(i)
-  tyler <- subset(annexations, YEAR < i)
+  tyler <- subset(df, YEAR < i)
+  
+  tyler$addition <- (tyler$YEAR < i) && (tyler$YEAR >= i - 10)
   
   areas[nrow(areas) + 1, ] <- c(i, sum(tyler$AREA))
   
   ggplot() +
-    geom_polygon(data = tyler, aes(x = long, y = lat, group = group)) +
+    geom_polygon(data = tyler, aes(x = long, y = lat, group = group, fill = addition)) +
     coord_fixed(xlim = c(272000, 295000), ylim = c(3567000, 3595000)) +
     annotate("text", x = 275000, y = 3568000, label = i) + 
     theme_map() +
@@ -30,3 +38,5 @@ for (i in seq(1940, 2017, 10)) {
 
 areas <- areas %>%
   mutate(area_sq_mi = area_sq_m * 0.0000003861022)
+
+write.csv(areas, "areas.csv", row.names = FALSE)
