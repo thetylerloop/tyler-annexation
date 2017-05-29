@@ -9,7 +9,7 @@ annexations@data$id <- rownames(annexations@data)
 df <- fortify(annexations, region = "id")
 df <- merge(df, annexations@data, by = "id")
 
-areas <- data.frame(year = numeric(), area_sq_m = numeric())
+areas <- data.frame(year = numeric(), area_sq_m = numeric(), new_area_sq_m = numeric())
 
 df$addition = df$YEAR >= 2010
 
@@ -33,7 +33,14 @@ for (i in seq(1940, 2017, 10)) {
     ungroup() %>%
     summarise(total = sum(AREA))
   
-  areas[nrow(areas) + 1, ] <- c(i, area$total)
+  new_area <- tyler %>%
+    group_by(id) %>%
+    filter(row_number() == 1) %>%
+    ungroup() %>%
+    filter(addition == TRUE) %>%
+    summarise(total = sum(AREA))
+  
+  areas[nrow(areas) + 1, ] <- c(i, area$total, new_area$total)
   
   ggplot() +
     geom_polygon(data = tyler, aes(x = long, y = lat, group = group, fill = addition)) +
@@ -47,6 +54,9 @@ for (i in seq(1940, 2017, 10)) {
 areas[nrow(areas) + 1, ] <- c(2017, sum(annexations@data$AREA))
 
 areas <- areas %>%
-  mutate(area_sq_mi = area_sq_m * 0.0000003861022)
+  mutate(
+    area_sq_mi = area_sq_m * 0.0000003861022,
+    new_area_sq_mi = new_area_sq_m * 0.0000003861022
+  )
 
 write.csv(areas, "results/areas.csv", row.names = FALSE)
